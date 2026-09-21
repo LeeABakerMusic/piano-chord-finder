@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Piano Chord Finder v0.2</title>
+<style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4f5f7;color:#17191c}main{max-width:1120px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;gap:18px;align-items:center}h1{margin:0;font-size:30px}header p{margin:6px 0 0;color:#626873}button{border:0;border-radius:9px;padding:11px 18px;font-weight:700;cursor:pointer;background:#2867d7;color:#fff}.result{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}.card,.help{background:#fff;border:1px solid #d9dde4;border-radius:12px;padding:16px}.label{display:block;color:#6b7280;font-size:12px;text-transform:uppercase;font-weight:800}.big{display:block;font-size:22px;margin-top:5px}.detail{display:block;margin-top:7px;color:#656b75}.scroll{overflow-x:auto;background:#dfe3e8;border-radius:12px;padding:16px}.keyboard{position:relative;width:1008px;height:230px;user-select:none}.key{position:absolute;top:0;border:1px solid #444;cursor:pointer;font-weight:700;display:flex;justify-content:center;align-items:flex-end;padding-bottom:10px}.white{width:48px;height:220px;background:#fff;color:#222;z-index:1;border-radius:0 0 5px 5px}.black{width:30px;height:138px;background:#171717;color:#fff;z-index:2;border-radius:0 0 5px 5px;font-size:10px}.key.selected{background:#4d8df0;color:#fff;outline:3px solid #174fa8;outline-offset:-3px}.help{margin-top:16px;line-height:1.5}footer{text-align:center;color:#6b7280;font-size:13px;margin-top:22px}@media(max-width:650px){main{padding:15px}.result{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}}</style></head>
+<body><main><header><div><h1>Piano Chord Finder</h1><p>Click the piano notes you played. Lowest note is detected automatically.</p></div><button id="clear">Clear</button></header>
+<section class="result"><div class="card"><span class="label">Selected notes</span><strong id="notes" class="big">None</strong></div><div class="card"><span class="label">Chord</span><strong id="chord" class="big">Select at least 2 notes</strong><span id="detail" class="detail"></span></div></section>
+<div class="scroll"><div id="keyboard" class="keyboard"></div></div>
+<section class="help">Expanded test library including the full reference chord family plus common extended chords and permitted omissions. Where the same notes have another exact interpretation, the app will show alternatives.</section>
+<details class="help" style="margin-top:16px">
+<summary style="cursor:pointer;font-weight:800">How to use Piano Chord Finder</summary>
+<div style="margin-top:12px">
+<p><strong>1.</strong> Click the piano keys that make up the chord you want to identify. You can select the notes in any order.</p>
+<p><strong>2.</strong> The app will identify the chord, its root note and its inversion. The inversion is worked out from the lowest piano key you selected.</p>
+<p><strong>3.</strong> To remove a note, click the highlighted key again. To start over, click <strong>Clear</strong>.</p>
+<p style="margin-bottom:0"><strong>Example:</strong> Select E3, G3, B♭3 and C4. Because E is the lowest note, the app should identify <strong>C7 — 1st inversion</strong>.</p>
+</div>
+</details>
+<footer>Piano Chord Finder v0.2 · Designed by Lee A Baker Music</footer></main>
+<script>
+const P=[
+["Major","",[0,4,7]],["Major no 5th","",[0,4]],["Add 9","add9",[0,2,4,7]],["Sixth","6",[0,4,7,9]],["Sixth no 3rd","6",[0,7,9]],
+["Six-nine","6/9",[0,2,4,7,9]],["Six-nine no 5th","6/9",[0,2,4,9]],["Major 7th","maj7",[0,4,7,11]],["Major 7th no 5th","maj7",[0,4,11]],["Major 7th no 3rd","maj7",[0,7,11]],
+["Major 9th","maj9",[0,2,4,7,11]],["Major 9th no 5th","maj9",[0,2,4,11]],["Major 7 sharp 11","maj7♯11",[0,4,6,7,11]],["Major 7 sharp 11 no 9","maj7♯11",[0,4,6,7,11]],["Major 7 sharp 11 no 5th","maj7♯11",[0,2,4,6,11]],
+["Flat 5","♭5",[0,4,6]],["Major 7 flat 5","maj7♭5",[0,4,6,11]],["Suspended 2nd","sus2",[0,2,7]],["Suspended 4th","sus4",[0,5,7]],["Augmented","aug",[0,4,8]],["Major 7 augmented","maj7aug",[0,4,8,11]],["Major 7 augmented no 3rd","maj7aug",[0,8,11]],
+["Minor","m",[0,3,7]],["Minor add 9","m(add9)",[0,2,3,7]],["Minor sixth","m6",[0,3,7,9]],["Minor 7th","m7",[0,3,7,10]],["Minor 7th no 5th","m7",[0,3,10]],
+["Minor 9th","m9",[0,2,3,7,10]],["Minor 9th no 5th","m9",[0,2,3,10]],["Minor 11th","m11",[0,2,3,5,7,10]],["Minor 11th no 9","m11",[0,3,5,7,10]],["Minor 11th no 7","m11",[0,2,3,5,7]],
+["Minor 11th no 9 or 7","m11",[0,3,5,7]],["Minor-major 7th","m(maj7)",[0,3,7,11]],["Minor-major 7th no 5th","m(maj7)",[0,3,11]],["Minor-major 9th","m(maj9)",[0,2,3,7,11]],["Minor-major 9th no 5th","m(maj9)",[0,2,3,11]],
+["Half-diminished 7th","m7♭5",[0,3,6,10]],["Minor-major 7 flat 5","m(maj7)♭5",[0,3,6,11]],["Diminished","dim",[0,3,6]],["Diminished 7th","dim7",[0,3,6,9]],
+["Dominant 7th","7",[0,4,7,10]],["Dominant 7th no 5th","7",[0,4,10]],["Dominant 7th no 3rd","7",[0,7,10]],["7 sus4","7sus4",[0,5,7,10]],["7 sus4 no 5th","7sus4",[0,5,10]],
+["Dominant 9th","9",[0,2,4,7,10]],["Dominant 9th no 5th","9",[0,2,4,10]],["7 sharp 11","7♯11",[0,4,6,7,10]],["7 sharp 11 with 9 no 5th","7♯11",[0,2,4,6,10]],
+["7 add 13","7(add13)",[0,4,7,9,10]],["7 add 13 no 5th","7(add13)",[0,4,9,10]],["7 flat 5","7♭5",[0,4,6,10]],["7 flat 9","7♭9",[0,1,4,7,10]],["7 flat 9 no 5th","7♭9",[0,1,4,10]],
+["7 flat 13","7♭13",[0,4,7,8,10]],["7 sharp 9","7♯9",[0,3,4,7,10]],["7 sharp 9 no 5th","7♯9",[0,3,4,10]],["7 augmented","7aug",[0,4,8,10]],
+["Eleventh","11",[0,2,4,5,7,10]],["Thirteenth","13",[0,2,4,7,9,10]],["Thirteenth no 5th","13",[0,2,4,9,10]],["Major 13th","maj13",[0,2,4,7,9,11]],["Minor 13th","m13",[0,2,3,7,9,10]],
+["Power chord","5",[0,7]],["Octave","1+8",[0]],["1+2+5","1+2+5",[0,2,7]]
+].map(x=>({name:x[0],symbol:x[1],ints:x[2]}));
+const names=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"], sel=new Set(), start=48, ww=48, kb=document.getElementById("keyboard");
+const black=p=>[1,3,6,8,10].includes(p), before=m=>{let n=0;for(let x=start;x<m;x++)if(!black(x%12))n++;return n};
+for(let m=48;m<=83;m++){let pc=m%12,b=document.createElement("button");b.className="key "+(black(pc)?"black":"white");b.textContent=names[pc]+(Math.floor(m/12)-1);b.style.left=(black(pc)?before(m)*ww-15:before(m)*ww)+"px";b.onclick=()=>{sel.has(m)?sel.delete(m):sel.add(m);b.classList.toggle("selected");analyse()};kb.appendChild(b)}
+function analyse(){let a=[...sel].sort((x,y)=>x-y), ne=document.getElementById("notes"),ce=document.getElementById("chord"),de=document.getElementById("detail");ne.textContent=a.length?a.map(m=>names[m%12]+(Math.floor(m/12)-1)).join(" – "):"None";if(a.length<2){ce.textContent="Select at least 2 notes";de.textContent="";return}
+let pcs=[...new Set(a.map(m=>m%12))],matches=[];for(let root of pcs){let rel=pcs.map(p=>(p-root+12)%12).sort((x,y)=>x-y);for(let p of P)if(rel.length===p.ints.length&&rel.every((v,i)=>v===p.ints[i]))matches.push({root,p})}
+if(!matches.length){ce.textContent="No exact match";de.textContent="This may be an incomplete, altered or uncommon voicing.";return}
+let bass=a[0]%12, fmt=m=>{let d=m.p.ints.indexOf((bass-m.root+12)%12), inv=["root position","1st inversion","2nd inversion","3rd inversion","4th inversion","5th inversion"][d]||"slash / extended voicing";return {main:names[m.root]+m.p.symbol+" — "+inv,desc:m.p.name+" · Root: "+names[m.root]+" · Bass: "+names[bass]+" · Pattern: "+m.p.ints.join("–")}};
+let f=fmt(matches[0]),alts=matches.slice(1,4).map(m=>names[m.root]+m.p.symbol);ce.textContent=f.main;de.textContent=f.desc+(alts.length?" · Also possible: "+alts.join(", "):"")}
+document.getElementById("clear").onclick=()=>{sel.clear();document.querySelectorAll(".selected").forEach(x=>x.classList.remove("selected"));analyse()};analyse();
+</script></body></html>
