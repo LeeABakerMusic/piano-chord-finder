@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Piano Chord Finder</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4f5f7;color:#17191c}
+main{max-width:1120px;margin:auto;padding:28px} header{display:flex;justify-content:space-between;gap:18px;align-items:center}
+h1{margin:0;font-size:30px} header p{margin:6px 0 0;color:#626873}
+button{border:0;border-radius:9px;padding:11px 18px;font-weight:700;cursor:pointer;background:#2867d7;color:#fff}
+.result{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.card,.help{background:#fff;border:1px solid #d9dde4;border-radius:12px;padding:16px}
+.label{display:block;color:#6b7280;font-size:12px;text-transform:uppercase;font-weight:800;letter-spacing:.04em}
+.big{display:block;font-size:22px;margin-top:5px}.detail{display:block;margin-top:7px;color:#656b75}
+.scroll{overflow-x:auto;background:#dfe3e8;border-radius:12px;padding:16px}
+.keyboard{position:relative;width:1008px;height:230px;user-select:none}
+.key{position:absolute;top:0;border:1px solid #444;cursor:pointer;font-weight:700;display:flex;justify-content:center;align-items:flex-end;padding-bottom:10px}
+.white{width:48px;height:220px;background:#fff;color:#222;z-index:1;border-radius:0 0 5px 5px}
+.black{width:30px;height:138px;background:#171717;color:#fff;z-index:2;border-radius:0 0 5px 5px;font-size:10px}
+.key.selected{background:#4d8df0;color:#fff;outline:3px solid #174fa8;outline-offset:-3px}
+.help{margin-top:16px;line-height:1.5}
+@media(max-width:650px){main{padding:15px}.result{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Piano Chord Finder</h1><p>Click the piano notes you played. Lowest note is detected automatically.</p></div><button id="clear" type="button">Clear</button></header>
+<section class="result">
+<div class="card"><span class="label">Selected notes</span><strong id="notes" class="big">None</strong></div>
+<div class="card"><span class="label">Chord</span><strong id="chord" class="big">Select at least 3 notes</strong><span id="detail" class="detail"></span></div>
+</section>
+<div class="scroll"><div id="keyboard" class="keyboard" aria-label="Interactive piano keyboard"></div></div>
+<section class="help"><strong>Try this:</strong> click E3, G3, B♭3 and C4. It should show <strong>C7 — 1st inversion</strong>.<br>You can click the notes in any order. Click a selected key again to remove it.</section>
+</main>
+<script>
+const patterns=[
+["Major","",[0,4,7]],["Minor","m",[0,3,7]],["Diminished","dim",[0,3,6]],["Augmented","aug",[0,4,8]],
+["Suspended 2nd","sus2",[0,2,7]],["Suspended 4th","sus4",[0,5,7]],["Dominant 7th","7",[0,4,7,10]],
+["Major 7th","maj7",[0,4,7,11]],["Minor 7th","m7",[0,3,7,10]],["Minor-major 7th","m(maj7)",[0,3,7,11]],
+["Half-diminished 7th","m7♭5",[0,3,6,10]],["Diminished 7th","dim7",[0,3,6,9]],["Sixth","6",[0,4,7,9]],
+["Minor sixth","m6",[0,3,7,9]],["Ninth","9",[0,2,4,7,10]],["Major ninth","maj9",[0,2,4,7,11]],["Minor ninth","m9",[0,2,3,7,10]]
+].map(x=>({name:x[0],symbol:x[1],ints:x[2]}));
+const names=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
+const keyboard=document.getElementById("keyboard"), notesEl=document.getElementById("notes"), chordEl=document.getElementById("chord"), detailEl=document.getElementById("detail");
+const selected=new Set(), start=48, ww=48, isBlack=p=>[1,3,6,8,10].includes(p);
+function whiteBefore(m){let n=0;for(let x=start;x<m;x++)if(!isBlack(x%12))n++;return n}
+for(let midi=48;midi<=83;midi++){
+ const pc=midi%12,b=document.createElement("button"); b.type="button"; b.className="key "+(isBlack(pc)?"black":"white");
+ b.textContent=names[pc]+(Math.floor(midi/12)-1); b.setAttribute("aria-pressed","false");
+ b.style.left=(isBlack(pc)?whiteBefore(midi)*ww-15:whiteBefore(midi)*ww)+"px";
+ b.addEventListener("click",()=>{selected.has(midi)?selected.delete(midi):selected.add(midi);b.classList.toggle("selected");b.setAttribute("aria-pressed",b.classList.contains("selected"));analyse()});
+ keyboard.appendChild(b);
+}
+function analyse(){
+ const arr=[...selected].sort((a,b)=>a-b);
+ notesEl.textContent=arr.length?arr.map(m=>names[m%12]+(Math.floor(m/12)-1)).join(" – "):"None";
+ if(arr.length<3){chordEl.textContent="Select at least 3 notes";detailEl.textContent="";return}
+ const pcs=[...new Set(arr.map(m=>m%12))], matches=[];
+ for(const root of pcs){
+   const rel=pcs.map(p=>(p-root+12)%12).sort((a,b)=>a-b);
+   for(const pat of patterns) if(rel.length===pat.ints.length && rel.every((v,i)=>v===pat.ints[i])) matches.push({root,pat});
+ }
+ if(!matches.length){chordEl.textContent="No basic match";detailEl.textContent="This may be an extended, altered or incomplete voicing.";return}
+ const m=matches[0],bass=arr[0]%12,interval=(bass-m.root+12)%12,degree=m.pat.ints.indexOf(interval);
+ const inv=["root position","1st inversion","2nd inversion","3rd inversion"][degree] || (degree>3?degree+"th inversion":"slash / extended voicing");
+ chordEl.textContent=names[m.root]+m.pat.symbol+" — "+inv;
+ detailEl.textContent=m.pat.name+" · Root: "+names[m.root]+" · Bass: "+names[bass]+" · Pattern: "+m.pat.ints.join("–");
+}
+document.getElementById("clear").addEventListener("click",()=>{selected.clear();document.querySelectorAll(".key.selected").forEach(k=>{k.classList.remove("selected");k.setAttribute("aria-pressed","false")});analyse()});
+analyse();
+</script>
+</body></html>
