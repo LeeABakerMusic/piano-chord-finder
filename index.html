@@ -1,0 +1,798 @@
+<!doctype html>
+<!--
+===============================================================================
+PIANO CHORD FINDER — DEVELOPER / MAINTENANCE NOTES
+===============================================================================
+
+PROJECT
+-------
+Name: Piano Chord Finder
+Credit shown to users: "Designed by Lee A Baker Music"
+
+PURPOSE
+-------
+A simple browser-based piano chord identification tool. The user clicks the
+actual piano keys they have played. The app identifies a matching chord and
+uses the physically lowest selected key to determine the inversion / bass note.
+
+This is intentionally a GENERAL-PURPOSE chord finder. It is not tied to Yamaha,
+Genos, SFF Edit, or any particular keyboard, although the chord library was
+expanded during development to cover a broad range of chord types useful to
+keyboard players.
+
+DISTRIBUTION
+------------
+The entire application is deliberately self-contained in ONE HTML file:
+    index.html
+
+There are no external JavaScript libraries, CSS files, fonts, databases,
+servers, APIs, or other dependencies. It can therefore:
+  * run locally by opening the HTML file in a desktop browser;
+  * be hosted as a static website (for example via GitHub Pages);
+  * be copied/backed up as a single file.
+
+IMPORTANT: Preserve this single-file/offline-friendly design unless there is a
+good reason to change it.
+
+STRUCTURE
+---------
+1. <style> contains the complete visual design.
+2. The HTML body contains:
+     - title / Clear button
+     - selected-notes display
+     - chord-result display
+     - visual piano keyboard
+     - collapsible "How to use Piano Chord Finder" instructions
+     - Lee A Baker Music design credit
+3. The <script> contains:
+     - chord-pattern library (const P)
+     - note-name table (const names)
+     - piano-key generation
+     - selected-note tracking
+     - analyse() chord-recognition routine
+     - Clear-button behaviour
+     - chord-note display and Why? explanation
+     - transpose-to-root control
+       IMPORTANT: transposition chooses the nearest valid semitone direction
+       (up or down) on the displayed keyboard, rather than always moving upward.
+     - Play Chord / Play Arpeggio browser audio
+       These buttons remain disabled until at least 2 piano keys are selected,
+       matching the app's minimum chord-identification requirement.
+     - v0.4 test adds optional Buy Me a Coffee support link near the footer, using the official Buy Me a Coffee button supplied by Lee, embedded directly in the HTML as a data image so no separate image file is required.
+     - v0.4 test adds expanded beginner instructions for Show Me A Chord.
+     - v0.4.1 TEST 2 improves manual ambiguous-chord ranking. Exact complete
+       chord spellings are preferred over interpretations explicitly marked
+       with omitted tones such as no5/no3; those remain in Also possible.
+       Test: D4-G4-C5 should prefer Csus2 — 1st inversion and list D7sus4(no5)
+       as an alternative.
+     - v0.4.1 fixes Show Me A Chord ambiguity: generated chords preserve the
+       exact requested root/chord/inversion in the result box. Manual piano-key
+       selection still uses normal chord detection and alternative matches.
+     - v0.4 test adds "Show Me A Chord": Root + Chord + Inversion dropdowns
+       plus Show Chord. It reuses the existing P chord-pattern library and
+       writes the generated voicing into the normal selected-note state, so
+       analysis, playback, Why? and transpose continue to use one shared system.
+     - stable desktop result-card height so ordinary chord information
+       appearing/disappearing does not move the piano vertically. The Why?
+       panel remains intentionally expandable. Mobile uses natural height.
+     - optional Key Sound toggle (ON by default): newly selected piano keys
+       play the same simple synthesized note used by playback; deselecting a
+       key is silent. The toggle does not disable Play Chord/Play Arpeggio.
+
+CHORD PATTERNS
+--------------
+The chord library is stored in const P.
+
+Each entry has:
+    ["Description", "display suffix", [semitone intervals from root]]
+
+Example:
+    ["Dominant 7th","7",[0,4,7,10]]
+
+For C as the root this means:
+    C = 0
+    E = 4
+    G = 7
+    Bb = 10
+so the displayed chord is C7.
+
+Some entries deliberately include common omitted-note voicings (especially
+omitted fifths) so that practical keyboard voicings can still be recognised.
+
+CHORD RECOGNITION
+-----------------
+analyse() does the following:
+  1. Sorts selected MIDI-style key numbers from low to high.
+  2. Converts selected keys to unique pitch classes (0–11).
+  3. Treats each selected pitch class as a possible root.
+  4. Converts the selected notes into semitone intervals from that root.
+  5. Compares that interval set against the patterns in const P.
+  6. Displays the first exact match as the main result.
+  7. Displays up to several additional exact interpretations as
+     "Also possible".
+  8. Uses the lowest actually selected piano key as the bass note and derives
+     the inversion from its position within the matched chord pattern.
+
+Because many note collections can legitimately have more than one musical
+interpretation, do NOT assume every set of notes has one uniquely correct chord
+name. Prefer sensible/common interpretations and show alternatives where useful.
+
+CURRENT DESIGN PRINCIPLES
+-------------------------
+* Keep the interface simple for non-technical users.
+* The user should click piano keys, not type note names.
+* Notes may be selected in ANY order.
+* Actual octave/key position matters for determining the lowest note/inversion.
+* Clicking a selected key again removes it.
+* Clear resets the selection.
+* Do not silently invent a chord when there is no good exact match.
+* Preserve "Designed by Lee A Baker Music" unless the owner requests otherwise.
+* Preserve the collapsible beginner instructions.
+
+ENHARMONIC NOTE NAMES
+---------------------
+The current display-name array is:
+    C, C#, D, Eb, E, F, F#, G, Ab, A, Bb, B
+(using musical sharp/flat glyphs in the UI).
+
+A future improvement could choose sharps/flats contextually based on the
+identified chord root/key. Be careful: changing enharmonic spelling should not
+change the underlying pitch-class mathematics.
+
+ADDING A NEW CHORD
+------------------
+Usually add another entry to const P.
+
+Example, if a hypothetical chord used intervals 0,4,7,10,9:
+    ["Dominant 7 add 13","7(add13)",[0,4,7,9,10]]
+
+Keep interval arrays sorted in ascending order from 0 to 11.
+
+TESTING AFTER CHANGES
+---------------------
+At minimum test:
+  C-E-G                 -> C major
+  C-Eb-G                -> Cm
+  C-E-G-Bb              -> C7
+  E-G-Bb-C (E lowest)   -> C7, 1st inversion
+  C-E-G-A-Bb            -> C7(add13)
+  C-D-E-G-A-Bb          -> C13
+
+Also test:
+  * selecting notes in a different click order;
+  * removing individual selected keys;
+  * Clear button;
+  * inversions across octaves;
+  * several extended/altered chords;
+  * mobile-sized browser layout;
+  * the collapsible instructions.
+
+VERSION / RELEASE WORKFLOW
+--------------------------
+The owner keeps known-good copies of previous versions.
+
+Recommended workflow:
+  1. Copy the current working index.html.
+  2. Make/test changes in the copy.
+  3. Only after approval, use the new file as index.html on the live static site.
+  4. If a change is disliked, restore a previous known-good index.html.
+
+When editing this project in a future AI chat, the owner can simply upload the
+latest index.html and ask for a modification. These notes are included so the
+project can be understood without access to the original development chat.
+
+===============================================================================
+END DEVELOPER / MAINTENANCE NOTES
+===============================================================================
+--><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Piano Chord Finder v3.0</title>
+<style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4f5f7;color:#17191c}main{max-width:1120px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;gap:18px;align-items:center}h1{margin:0;font-size:30px}header p{margin:6px 0 0;color:#626873}button{border:0;border-radius:9px;padding:11px 18px;font-weight:700;cursor:pointer;background:#2867d7;color:#fff}.result{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}.card,.help{background:#fff;border:1px solid #d9dde4;border-radius:12px;padding:16px}.label{display:block;color:#6b7280;font-size:12px;text-transform:uppercase;font-weight:800}.big{display:block;font-size:22px;margin-top:5px}.detail{display:block;margin-top:7px;color:#656b75}.scroll{overflow-x:auto;background:#dfe3e8;border-radius:12px;padding:16px}.keyboard{position:relative;width:1008px;height:230px;user-select:none}.key{position:absolute;top:0;border:1px solid #444;cursor:pointer;font-weight:700;display:flex;justify-content:center;align-items:flex-end;padding-bottom:10px}.white{width:48px;height:220px;background:#fff;color:#222;z-index:1;border-radius:0 0 5px 5px}.black{width:30px;height:138px;background:#171717;color:#fff;z-index:2;border-radius:0 0 5px 5px;font-size:10px}.key.selected{background:#4d8df0;color:#fff;outline:3px solid #174fa8;outline-offset:-3px}.help{margin-top:16px;line-height:1.5}.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}.tools button{min-width:120px}.secondary{background:#4b5563}.whybox{display:none;margin-top:12px;padding:12px;background:#f4f7fb;border-radius:9px;color:#3f4650;line-height:1.5}.whybox.show{display:block}.chordnotes{margin-top:10px;font-weight:700}.transpose{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.transpose label{font-weight:700;color:#4b5563}.transpose select{font:inherit;padding:10px 34px 10px 11px;border:1px solid #cbd1da;border-radius:9px;background:#fff;min-height:42px}.soundtoggle{display:flex;align-items:center;gap:8px;font-weight:700;color:#4b5563}.soundtoggle input{width:20px;height:20px;accent-color:#1677ff}button:disabled{opacity:.45;cursor:not-allowed}footer{text-align:center;color:#6b7280;font-size:13px;margin-top:22px}@media(max-width:650px){main{padding:15px}.result{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}}
+/* Keep the ordinary result area stable so selecting notes does not move the piano. */
+@media(min-width:701px){
+  .result{align-items:stretch}
+  .result .card{box-sizing:border-box;min-height:148px}
+}
+@media(max-width:700px){
+  .result .card{min-height:0}
+}
+
+.builder{margin-top:18px;padding:16px;background:#f7f8fa;border-radius:12px}
+.builder h2{margin:0 0 6px;font-size:20px}
+.builder p{margin:0 0 14px;color:#626a75}
+.builder-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.builder-field{display:flex;flex-direction:column;gap:5px}
+.builder-field label{font-weight:800;color:#4b5563;font-size:13px}
+.builder select{font:inherit;padding:10px 34px 10px 11px;border:1px solid #cbd1da;border-radius:9px;background:#fff;min-height:42px}
+.builder-status{margin-top:10px;color:#626a75;font-size:14px}
+@media(max-width:700px){.builder-controls{align-items:stretch}.builder-field{flex:1 1 140px}.builder select{width:100%}}
+
+.support{margin:22px 0 8px;padding:18px;text-align:center;background:#fff8e7;border:1px solid #ead9a5;border-radius:12px}
+.support strong{display:block;font-size:18px;margin-bottom:5px}
+.support p{margin:0 auto 12px;max-width:680px;color:#626a75;line-height:1.45}
+.support .bmc-official-link{display:inline-block;line-height:0}
+.support .bmc-official-button{display:block;height:52px;width:auto;max-width:100%;border:0}
+
+.midi-panel{margin-top:18px;padding:16px;background:#eef5ff;border:1px solid #cbdcf3;border-radius:12px}
+.midi-panel h2{margin:0 0 6px;font-size:20px}
+.midi-panel p{margin:0 0 12px;color:#535f70}
+.midi-controls{display:flex;align-items:end;flex-wrap:wrap;gap:12px}
+.midi-controls label{display:flex;align-items:center;gap:7px;font-weight:650}
+.midi-controls select{font:inherit;min-width:190px;max-width:100%;padding:9px;border:1px solid #b7c8df;border-radius:8px;background:white}
+.midi-status{font-size:14px;margin-top:11px;color:#42546a}
+.midi-panel button{padding:10px 14px}
+
+.keyboard-mode{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0}.keyboard-mode-label{font-weight:750;color:#4b5563;margin-right:4px}.keyboard-mode button{background:#e4e9f2;color:#283c56;border:2px solid transparent;padding:9px 15px}.keyboard-mode button.mode-active{background:#2867d7;color:#fff;border-color:#16499f}.keyboard.full-mode{width:100%;height:190px;min-width:0}.keyboard.full-mode .key{padding-bottom:7px;font-size:0;border-radius:0}.keyboard.full-mode .key.white{height:184px}.keyboard.full-mode .key.black{height:112px}.keyboard.full-mode .key.octave-label{font-size:clamp(7px,0.9vw,11px);padding-bottom:7px}.keyboard.full-mode .key.selected{outline:2px solid #174fa8}.scroll.full-scroll{padding:10px 6px;overflow-x:hidden}
+
+/* v2.1 TEST 3: Device-specific layout; full piano uses extra room or horizontal scrolling. */
+.device-choice{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 4px}
+.device-choice .device-label{font-weight:750;color:#4b5563;margin-right:4px}
+.device-choice button{background:#e4e9f2;color:#283c56;border:2px solid transparent;padding:8px 13px}
+.device-choice button.mode-active{background:#2867d7;color:white;border-color:#16499f}
+.device-hint{font-size:13px;color:#566273;margin:4px 0 10px}
+main.layout-computer.wide-piano{max-width:1540px}
+main.layout-tablet{max-width:950px}
+main.layout-phone{max-width:480px}
+main.layout-phone .result,main.layout-tablet .result{grid-template-columns:1fr}
+main.layout-phone header{flex-direction:column;align-items:flex-start}
+main.layout-phone .builder-controls,main.layout-phone .midi-controls{align-items:stretch}
+main.layout-phone .builder-field{flex:1 1 130px}
+main.layout-phone .builder select{width:100%}
+.keyboard.full-mode{height:230px;min-width:0}
+.keyboard.full-mode .key.white{height:220px}
+.keyboard.full-mode .key.black{height:135px}
+.scroll.full-scroll{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-gutter:stable;padding:12px}
+main.layout-computer .keyboard.full-mode{width:100%}
+main.layout-tablet .keyboard.full-mode{width:1248px}
+main.layout-phone .keyboard.full-mode{width:1040px}
+main.layout-phone .scroll.full-scroll{padding:8px}
+main.layout-phone .keyboard.full-mode .key.white{height:190px}
+main.layout-phone .keyboard.full-mode .key.black{height:115px}
+main.layout-phone .keyboard.full-mode{height:200px}
+/* TEST 3: The generic button rule adds 18px horizontal padding to EVERY
+   piano key. At 88 keys that forces adjacent black keys to overlap.
+   Remove it only in full mode, preserving DEFAULT exactly as before. */
+.keyboard.full-mode .key{padding:0 0 7px;min-width:0;min-height:0;box-sizing:border-box;flex:none}
+.keyboard.full-mode .key.black{padding:0}
+
+</style></head>
+<body><main><header><div><h1>Piano Chord Finder</h1><p>Click the piano notes you played. Lowest note is detected automatically.</p></div><button id="clear">Clear</button></header>
+<section class="result">
+<div class="card"><span class="label">Selected notes</span><strong id="notes" class="big">None</strong></div>
+<div class="card"><span class="label">Chord</span><strong id="chord" class="big">Select at least 2 notes</strong><span id="detail" class="detail"></span><div id="chordnotes" class="chordnotes"></div><div id="whybox" class="whybox"></div></div>
+</section>
+<div class="tools">
+<button id="playChord" disabled>▶ Play Chord</button>
+<button id="playArp" disabled>♪ Play Arpeggio</button>
+<button id="why" class="secondary" disabled>Why?</button>
+<label class="soundtoggle"><input id="keySound" type="checkbox" checked> Key Sound</label>
+<div class="transpose">
+<label for="transposeRoot">Transpose to:</label>
+<select id="transposeRoot" disabled aria-label="Transpose chord to a new root"></select>
+<button id="transposeBtn" class="secondary" disabled>Transpose</button>
+</div>
+</div>
+<div class="device-choice" role="group" aria-label="Screen layout"><span class="device-label">Screen layout:</span><button type="button" id="devicePhone" aria-pressed="false">Phone</button><button type="button" id="deviceTablet" aria-pressed="false">Tablet</button><button type="button" id="deviceComputer" aria-pressed="false">Computer</button></div>
+<p class="device-hint" id="deviceHint">Choose the layout that suits your screen. The full keyboard scrolls sideways on smaller screens.</p>
+<div class="keyboard-mode" role="group" aria-label="Piano display size"><span class="keyboard-mode-label">Piano display:</span><button type="button" id="modeDefault" class="mode-active" aria-pressed="true">DEFAULT</button><button type="button" id="modeFull" aria-pressed="false">FULL 88 KEYS</button></div>
+<div class="scroll" id="keyboardScroll"><div id="keyboard" class="keyboard"></div></div>
+
+<section class="builder">
+  <h2>Show Me A Chord</h2>
+  <p>Choose a root note, chord type and inversion, then press <strong>Show Chord</strong>. The correct piano keys will be highlighted.</p>
+  <div class="builder-controls">
+    <div class="builder-field">
+      <label for="showRoot">Root</label>
+      <select id="showRoot"></select>
+    </div>
+    <div class="builder-field">
+      <label for="showType">Chord</label>
+      <select id="showType"></select>
+    </div>
+    <div class="builder-field">
+      <label for="showInv">Inversion</label>
+      <select id="showInv"></select>
+    </div>
+    <button id="showChordBtn" type="button">Show Chord</button>
+  </div>
+  <div id="builderStatus" class="builder-status">Example: C + Major + Root Position will highlight C – E – G.</div>
+</section>
+<section class="midi-panel" aria-labelledby="midiHeading">
+  <h2 id="midiHeading">MIDI Keyboard</h2>
+  <p>Connect a USB MIDI keyboard and play notes to highlight the piano. Mouse clicks still work with MIDI enabled. Key Sound also works with MIDI input. Disable MIDI to stop keyboard input and MIDI-triggered sound; mouse Key Sound remains available.</p>
+  <div class="midi-controls">
+    <button id="midiToggle" type="button" aria-pressed="false">Enable MIDI</button>
+    <div><label for="midiDevice">MIDI input</label><select id="midiDevice" disabled><option value="">Enable MIDI first</option></select></div>
+    <label><input id="midiHold" type="checkbox"> Hold notes after release</label>
+  </div>
+  <div class="midi-status" id="midiStatus" role="status" aria-live="polite">MIDI is off. You can use the mouse as normal.</div>
+  <p style="font-size:12px;margin:9px 0 0">MIDI Clear shortcut (only when Hold Notes is ticked): hold C4, C♯4, D4, D♯4 and E4 together. The mouse Clear button still works.</p>
+</section>
+<section class="help">Expanded test library including the full reference chord family plus common extended chords and permitted omissions. Where the same notes have another exact interpretation, the app will show alternatives.</section>
+<details class="help" style="margin-top:16px">
+<summary style="cursor:pointer;font-weight:800">How to use Piano Chord Finder</summary>
+<div style="margin-top:12px">
+<p><strong>1.</strong> Click the piano keys that make up the chord you want to identify. You can select the notes in any order.</p>
+<p><strong>2.</strong> The app will identify the chord, its root note and its inversion. The inversion is worked out from the lowest piano key you selected.</p>
+<p><strong>3.</strong> Use <strong>Play Chord</strong> to hear all selected notes together, or <strong>Play Arpeggio</strong> to hear them one at a time from lowest to highest.</p>
+<p><strong>4.</strong> <strong>Key Sound</strong> is switched on by default. When it is on, clicking a piano key or playing a MIDI note produces sound through your computer. Untick <strong>Key Sound</strong> if you want to select notes silently. This does not disable the Play Chord or Play Arpeggio buttons.</p>
+<p><strong>5.</strong> Press <strong>Why?</strong> for a simple explanation of how the chord is built.</p>
+<p><strong>6.</strong> To transpose the chord, choose the new root note from the <strong>Transpose to</strong> menu, then click the <strong>Transpose</strong> button. The app will move the chord to the nearest practical position on the displayed piano while keeping the same voicing and inversion.</p>
+<p><strong>7.</strong> To remove a note, click the highlighted key again. To start over, click <strong>Clear</strong>.</p>
+<p><strong>8. Show Me A Chord:</strong> Use this feature when you know the chord you want to see but aren't sure which piano keys to play. Choose the <strong>Root</strong> (for example C), choose the <strong>Chord</strong> type (for example Major), then choose the <strong>Inversion</strong>. Root Position shows the normal chord shape, while 1st, 2nd and other inversions rearrange the same chord notes with a different note at the bottom. Press <strong>Show Chord</strong> and the correct piano keys will be highlighted. You can then use <strong>Play Chord</strong> or <strong>Play Arpeggio</strong> to hear it, and the other chord tools continue to work as normal.</p>
+<p><strong>9. MIDI Keyboard:</strong> Connect your MIDI controller to your computer, open the app in a browser supporting Web MIDI (such as Chrome or Edge) on the HTTPS website, then press <strong>Enable MIDI</strong> and allow access if prompted. Choose your MIDI input if necessary. Playing notes highlights the same on-screen keys as clicking them. You can still use the mouse. <strong>Hold notes after release</strong> is off by default; tick it if you want notes to remain highlighted after releasing them. Press <strong>Clear</strong> or hold C4, C♯4, D4, D♯4 and E4 together on your MIDI keyboard to clear the chord in Hold mode. <strong>Key Sound</strong> works with both mouse clicks and MIDI notes, and can be switched off if your keyboard already produces sound.</p>
+<p style="margin-bottom:0"><strong>Example:</strong> Select E3, G3, B♭3 and C4. Because E is the lowest note, the app should identify <strong>C7 — 1st inversion</strong>.</p>
+</div>
+</details>
+<section class="support">
+  <strong>☕ Enjoying Piano Chord Finder?</strong>
+  <p>Piano Chord Finder is free to use. If you've found it useful and would like to support its continued development, please consider buying me a coffee. Thank you!</p>
+  <a class="bmc-official-link" href="https://www.buymeacoffee.com/leeabakermusic" target="_blank" rel="noopener noreferrer" aria-label="Buy Me a Coffee">
+    <img class="bmc-official-button" src="data:image/png;base64,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" alt="Buy Me a Coffee">
+  </a>
+</section>
+<footer>Piano Chord Finder v3.0 · Designed by Lee A Baker Music</footer></main>
+<script>
+const P=[
+["Major","",[0,4,7]],["Major no 5th","",[0,4]],["Add 9","add9",[0,2,4,7]],["Sixth","6",[0,4,7,9]],["Sixth no 3rd","6",[0,7,9]],
+["Six-nine","6/9",[0,2,4,7,9]],["Six-nine no 5th","6/9",[0,2,4,9]],["Major 7th","maj7",[0,4,7,11]],["Major 7th no 5th","maj7",[0,4,11]],["Major 7th no 3rd","maj7",[0,7,11]],
+["Major 9th","maj9",[0,2,4,7,11]],["Major 9th no 5th","maj9",[0,2,4,11]],["Major 7 sharp 11","maj7♯11",[0,4,6,7,11]],["Major 7 sharp 11 no 9","maj7♯11",[0,4,6,7,11]],["Major 7 sharp 11 no 5th","maj7♯11",[0,2,4,6,11]],
+["Flat 5","♭5",[0,4,6]],["Major 7 flat 5","maj7♭5",[0,4,6,11]],["Suspended 2nd","sus2",[0,2,7]],["Suspended 4th","sus4",[0,5,7]],["Augmented","aug",[0,4,8]],["Major 7 augmented","maj7aug",[0,4,8,11]],["Major 7 augmented no 3rd","maj7aug",[0,8,11]],
+["Minor","m",[0,3,7]],["Minor add 9","m(add9)",[0,2,3,7]],["Minor sixth","m6",[0,3,7,9]],["Minor 7th","m7",[0,3,7,10]],["Minor 7th no 5th","m7",[0,3,10]],
+["Minor 9th","m9",[0,2,3,7,10]],["Minor 9th no 5th","m9",[0,2,3,10]],["Minor 11th","m11",[0,2,3,5,7,10]],["Minor 11th no 9","m11",[0,3,5,7,10]],["Minor 11th no 7","m11",[0,2,3,5,7]],
+["Minor 11th no 9 or 7","m11",[0,3,5,7]],["Minor-major 7th","m(maj7)",[0,3,7,11]],["Minor-major 7th no 5th","m(maj7)",[0,3,11]],["Minor-major 9th","m(maj9)",[0,2,3,7,11]],["Minor-major 9th no 5th","m(maj9)",[0,2,3,11]],
+["Half-diminished 7th","m7♭5",[0,3,6,10]],["Minor-major 7 flat 5","m(maj7)♭5",[0,3,6,11]],["Diminished","dim",[0,3,6]],["Diminished 7th","dim7",[0,3,6,9]],
+["Dominant 7th","7",[0,4,7,10]],["Dominant 7th no 5th","7",[0,4,10]],["Dominant 7th no 3rd","7",[0,7,10]],["7 sus4","7sus4",[0,5,7,10]],["7 sus4 no 5th","7sus4",[0,5,10]],
+["Dominant 9th","9",[0,2,4,7,10]],["Dominant 9th no 5th","9",[0,2,4,10]],["7 sharp 11","7♯11",[0,4,6,7,10]],["7 sharp 11 with 9 no 5th","7♯11",[0,2,4,6,10]],
+["7 add 13","7(add13)",[0,4,7,9,10]],["7 add 13 no 5th","7(add13)",[0,4,9,10]],["7 flat 5","7♭5",[0,4,6,10]],["7 flat 9","7♭9",[0,1,4,7,10]],["7 flat 9 no 5th","7♭9",[0,1,4,10]],
+["7 flat 13","7♭13",[0,4,7,8,10]],["7 sharp 9","7♯9",[0,3,4,7,10]],["7 sharp 9 no 5th","7♯9",[0,3,4,10]],["7 augmented","7aug",[0,4,8,10]],
+["Eleventh","11",[0,2,4,5,7,10]],["Thirteenth","13",[0,2,4,7,9,10]],["Thirteenth no 5th","13",[0,2,4,9,10]],["Major 13th","maj13",[0,2,4,7,9,11]],["Minor 13th","m13",[0,2,3,7,9,10]],
+["Power chord","5",[0,7]],["Octave","1+8",[0]],["1+2+5","1+2+5",[0,2,7]]
+].map(x=>({name:x[0],symbol:x[1],ints:x[2]}));
+const names=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"],
+sel=new Set(), start=48, ww=48, kb=document.getElementById("keyboard");
+let keyboardMode="default";
+const appMain=document.querySelector("main");
+let deviceMode=window.innerWidth<650?"phone":window.innerWidth<1050?"tablet":"computer";
+function setDeviceMode(mode){
+  deviceMode=mode;
+  appMain.classList.remove("layout-phone","layout-tablet","layout-computer");
+  appMain.classList.add("layout-"+mode);
+  ["phone","tablet","computer"].forEach(d=>{
+    const b=document.getElementById("device"+d[0].toUpperCase()+d.slice(1));
+    b.classList.toggle("mode-active",d===mode);
+    b.setAttribute("aria-pressed",String(d===mode));
+  });
+  document.getElementById("deviceHint").textContent=mode==="computer"
+    ?"Computer: FULL 88 KEYS expands the page to give the keys more room."
+    :mode==="tablet"
+    ?"Tablet: swipe or scroll sideways to explore the full keyboard."
+    :"Phone: swipe sideways to explore the full keyboard; DEFAULT stays available.";
+  appMain.classList.toggle("wide-piano",keyboardMode==="full"&&mode==="computer");
+}
+["phone","tablet","computer"].forEach(d=>document.getElementById("device"+d[0].toUpperCase()+d.slice(1)).addEventListener("click",()=>setDeviceMode(d)));
+setDeviceMode(deviceMode);
+const keyboardBounds=()=>keyboardMode==="full"?[21,108]:[48,83];
+let currentMatch=null;
+const black=p=>[1,3,6,8,10].includes(p), before=m=>{let n=0;for(let x=(keyboardMode==="full"?21:start);x<m;x++)if(!black(x%12))n++;return n};
+const noteLabel=m=>names[m%12]+(Math.floor(m/12)-1);
+const intervalNames={0:"root",1:"minor 2nd / ♭9",2:"major 2nd / 9th",3:"minor 3rd / ♯9",4:"major 3rd",5:"perfect 4th / 11th",6:"♭5 / ♯11",7:"perfect 5th",8:"♯5 / ♭13",9:"major 6th / 13th",10:"minor 7th",11:"major 7th"};
+
+const transposeRoot=document.getElementById("transposeRoot");
+names.forEach((n,i)=>{let o=document.createElement("option");o.value=i;o.textContent=n;transposeRoot.appendChild(o)});
+
+const showRoot=document.getElementById("showRoot"),
+      showType=document.getElementById("showType"),
+      showInv=document.getElementById("showInv"),
+      builderStatus=document.getElementById("builderStatus");
+
+names.forEach((n,i)=>{let o=document.createElement("option");o.value=i;o.textContent=n;showRoot.appendChild(o)});
+
+// Use the app's existing chord library. Hide duplicate definitions that would
+// produce the same visible chord choice.
+const builderPatterns=[];
+const builderSeen=new Set();
+P.forEach((p,i)=>{
+  const key=p.name+"|"+p.symbol+"|"+p.ints.join(",");
+  if(!builderSeen.has(key)){
+    builderSeen.add(key);
+    builderPatterns.push({index:i,p});
+  }
+});
+builderPatterns.forEach((item,j)=>{
+  let o=document.createElement("option");
+  o.value=j;
+  o.textContent=item.p.name;
+  showType.appendChild(o);
+});
+
+function updateBuilderInversions(){
+  const item=builderPatterns[Number(showType.value)||0];
+  const count=item.p.ints.length;
+  const labels=["Root Position","1st Inversion","2nd Inversion","3rd Inversion","4th Inversion","5th Inversion"];
+  showInv.innerHTML="";
+  for(let i=0;i<count;i++){
+    let o=document.createElement("option");
+    o.value=i;o.textContent=labels[i]||((i+1)+"th Inversion");
+    showInv.appendChild(o);
+  }
+}
+showType.addEventListener("change",updateBuilderInversions);
+updateBuilderInversions();
+
+function buildChordMidi(root,ints,inversion){
+  // Start around C4 so there is room above for extensions/inversions.
+  let rootMidi=60+((root-0+12)%12);
+  if(rootMidi>71)rootMidi-=12;
+  let notes=ints.map(i=>rootMidi+i).sort((a,b)=>a-b);
+
+  // Move the lowest note(s) up an octave for each inversion.
+  for(let i=0;i<inversion;i++){
+    let n=notes.shift()+12;
+    notes.push(n);
+    notes.sort((a,b)=>a-b);
+  }
+
+  // Keep the whole voicing within the displayed keyboard.
+  while(Math.max(...notes)>83)notes=notes.map(n=>n-12);
+  while(Math.min(...notes)<48)notes=notes.map(n=>n+12);
+  return notes;
+}
+
+document.getElementById("showChordBtn").addEventListener("click",()=>{
+  const root=Number(showRoot.value),
+        item=builderPatterns[Number(showType.value)||0],
+        inv=Number(showInv.value)||0,
+        notesToShow=buildChordMidi(root,item.p.ints,inv);
+
+  mouseSelected.clear();midiLatched.clear();midiHeld.clear();
+  notesToShow.forEach(m=>mouseSelected.add(m));
+  sel.clear();notesToShow.forEach(m=>sel.add(m));
+  shownChordOverride={root,p:item.p,inversion:inv};
+  refreshKeys();
+  analyse();
+
+  const invText=showInv.options[showInv.selectedIndex].textContent;
+  builderStatus.textContent="Showing "+names[root]+item.p.symbol+" — "+invText+
+    ": "+notesToShow.map(noteLabel).join(" – ");
+});
+
+
+let shownChordOverride=null;
+// MIDI state is separate from mouse selection, so MIDI can be switched off
+// without disabling ordinary mouse interaction.
+let midiAccess=null,midiEnabled=false,midiInput=null,midiSession=0;
+const midiHeld=new Set(),midiLatched=new Set(),mouseSelected=new Set();
+// C4, C#4, D4, D#4, E4 together form the optional MIDI Clear shortcut.
+const midiClearNotes=[60,61,62,63,64];
+let midiClearArmed=true;
+// Track MIDI-triggered audio separately so Disable MIDI silences it immediately.
+const midiAudioGains=new Set();
+function silenceMidiAudio(){
+  for(const gain of midiAudioGains){
+    try{gain.gain.cancelScheduledValues(0);gain.gain.setValueAtTime(0, gain.context.currentTime);}catch(e){}
+  }
+  midiAudioGains.clear();
+}
+function clearChordSelection(){
+  shownChordOverride=null;mouseSelected.clear();midiLatched.clear();
+  updateSelectionFromSources();
+  document.getElementById("whybox").classList.remove("show");
+}
+const midiToggle=document.getElementById("midiToggle"),midiDevice=document.getElementById("midiDevice"),
+      midiHold=document.getElementById("midiHold"),midiStatus=document.getElementById("midiStatus");
+function updateSelectionFromSources(){
+  sel.clear();
+  mouseSelected.forEach(m=>sel.add(m));
+  midiLatched.forEach(m=>sel.add(m));
+  refreshKeys();analyse();
+}
+// The MIDI status displays every key physically held, not just the latest note.
+function updateMidiHeldStatus(){
+  const notes=[...midiHeld].sort((a,b)=>a-b);
+  midiStatus.textContent=notes.length
+    ? "Receiving MIDI — keys held ("+notes.length+"): "+notes.map(noteLabel).join(" · ")
+    : "MIDI connected. No keys currently held.";
+}
+function midiMessage(event){
+  if(!midiEnabled)return;
+  const data=event.data;if(!data||data.length<3)return;
+  const kind=data[0]&0xf0,note=data[1],velocity=data[2];
+  if(kind!==0x90&&kind!==0x80)return;
+  if(note<21||note>108){midiStatus.textContent="MIDI connected. Note outside the 88-key piano range was ignored.";return;}
+  if(keyboardMode==="default" && (note<48||note>83)){midiStatus.textContent="MIDI connected. Switch to FULL 88 KEYS to display "+noteLabel(note)+".";return;}
+  if(kind===0x90&&velocity>0){
+    if(!midiHeld.has(note) && document.getElementById("keySound").checked){
+      const ctx=ensureAudio();
+      if(ctx && midiEnabled)playMidi(note,ctx.currentTime+.01,.7,true);
+    }
+    midiHeld.add(note);
+    // Trigger only once per five-key press, even if the keyboard repeats Note On.
+    if(midiHold.checked && midiClearArmed && midiClearNotes.every(n=>midiHeld.has(n))){
+      midiClearArmed=false;
+      clearChordSelection();
+      midiStatus.textContent="MIDI Clear shortcut received — chord cleared. Release the five keys to use it again.";
+      return;
+    }
+    // After the shortcut, ignore its keys until all five have been released.
+    if(midiHold.checked && !midiClearArmed && midiClearNotes.includes(note))return;
+    midiLatched.add(note);
+    shownChordOverride=null;updateSelectionFromSources();
+    updateMidiHeldStatus();
+  }else{
+    midiHeld.delete(note);
+    if(!midiClearArmed && midiClearNotes.every(n=>!midiHeld.has(n))){
+      midiClearArmed=true;
+    }
+    if(!midiHold.checked){midiLatched.delete(note);shownChordOverride=null;updateSelectionFromSources();}
+    updateMidiHeldStatus();
+  }
+}
+function detachMidi(){
+  if(midiInput){midiInput.onmidimessage=null;midiInput=null;}
+  midiHeld.clear();midiClearArmed=true;
+}
+function chooseMidiInput(){
+  detachMidi();
+  if(!midiEnabled||!midiAccess)return;
+  midiInput=midiAccess.inputs.get(midiDevice.value)||null;
+  if(midiInput){
+    const session=midiSession, selectedInput=midiInput;
+    midiInput.onmidimessage=event=>{
+      if(!midiEnabled || session!==midiSession || midiInput!==selectedInput)return;
+      midiMessage(event);
+    };
+    midiStatus.textContent="Connected to "+midiInput.name+". Play your keyboard or click the piano.";
+  }
+  else midiStatus.textContent="No MIDI input selected. Mouse control is still available.";
+}
+function listMidiInputs(){
+  if(!midiEnabled||!midiAccess)return;
+  const previous=midiDevice.value;
+  const inputs=[...midiAccess.inputs.values()].filter(i=>i.state==="connected");
+  midiDevice.replaceChildren();
+  if(!inputs.length){
+    midiDevice.add(new Option("No MIDI inputs found",""));
+    detachMidi();midiStatus.textContent="No MIDI inputs found. Connect your keyboard, then check its USB connection.";
+    return;
+  }
+  inputs.forEach(i=>midiDevice.add(new Option(i.name||"Unnamed MIDI input",i.id)));
+  midiDevice.value=inputs.some(i=>i.id===previous)?previous:inputs[0].id;
+  chooseMidiInput();
+}
+midiDevice.addEventListener("change",chooseMidiInput);
+midiHold.addEventListener("change",()=>{
+  if(!midiHold.checked){
+    // Disarm any in-progress clear shortcut when Hold Notes is switched off.
+    midiClearArmed=true;
+    // Release any notes that are no longer physically held.
+    for(const n of midiLatched)if(!midiHeld.has(n))midiLatched.delete(n);
+    shownChordOverride=null;updateSelectionFromSources();
+  }
+});
+midiToggle.addEventListener("click",async()=>{
+  if(midiEnabled){
+    midiEnabled=false;
+    silenceMidiAudio();
+    midiSession++; // Invalidate any already queued MIDI messages.
+    detachMidi();
+    if(midiAccess){
+      midiAccess.onstatechange=null;
+      // Close the browser MIDI session so the device cannot keep sending to this app.
+      for(const input of midiAccess.inputs.values()){input.onmidimessage=null;input.close().catch(()=>{});}
+      midiAccess=null;
+    }
+    midiDevice.disabled=true;midiToggle.textContent="Enable MIDI";midiToggle.setAttribute("aria-pressed","false");
+    midiStatus.textContent="MIDI is OFF — this page ignores MIDI and silences its MIDI-generated notes. Mouse Key Sound still works. If you still hear sound, close other test tabs and check the Genos or other audio apps.";
+    return;
+  }
+  if(!navigator.requestMIDIAccess){
+    midiStatus.textContent="This browser does not support Web MIDI. Try Chrome or Edge on your computer.";return;
+  }
+  midiStatus.textContent="Requesting MIDI permission…";midiToggle.disabled=true;
+  try{
+    midiAccess=await navigator.requestMIDIAccess({sysex:false});
+    midiSession++;
+    midiEnabled=true;midiDevice.disabled=false;
+    midiToggle.textContent="Disable MIDI";midiToggle.setAttribute("aria-pressed","true");
+    midiAccess.onstatechange=listMidiInputs;
+    listMidiInputs();
+  }catch(e){midiStatus.textContent="MIDI access was unavailable or denied. Allow MIDI permission on the HTTPS site and try again.";}
+  finally{midiToggle.disabled=false;}
+});
+
+function makeKeys(){
+  kb.replaceChildren();
+  const full=keyboardMode==="full",lo=full?21:48,hi=full?108:83;
+  const whiteCount=full?52:21;
+  // Default preserves the original keyboard. Full mode expands on computer
+  // and scrolls horizontally on phone/tablet so the keys remain usable.
+  kb.classList.toggle("full-mode",full);
+  document.getElementById("keyboardScroll").classList.toggle("full-scroll",full);
+  appMain.classList.toggle("wide-piano",full&&deviceMode==="computer");
+  const whiteWidth=full?100/whiteCount:48;
+  for(let m=lo;m<=hi;m++){
+    const pc=m%12,isBlack=black(pc),b=document.createElement("button");
+    b.type="button";
+    b.className="key "+(isBlack?"black":"white");
+    if(full){
+      const n=before(m),pos=isBlack?n-.3125:n;
+      b.style.left=(pos*whiteWidth)+"%";
+      b.style.width=(whiteWidth*(isBlack?.625:1))+"%";
+      b.title=noteLabel(m);
+      b.setAttribute("aria-label",noteLabel(m));
+      if(!isBlack && pc===0){b.classList.add("octave-label");b.textContent=noteLabel(m);}
+    }else{
+      b.textContent=noteLabel(m);
+      b.style.left=(isBlack?before(m)*ww-15:before(m)*ww)+"px";
+    }
+    b.dataset.midi=m;
+    b.onclick=()=>{
+      shownChordOverride=null;
+      if(mouseSelected.has(m))mouseSelected.delete(m);
+      else{
+        mouseSelected.add(m);
+        if(document.getElementById("keySound").checked){
+          const ctx=ensureAudio();if(ctx)playMidi(m,ctx.currentTime+.01,.7);
+        }
+      }
+      updateSelectionFromSources();
+    };
+    kb.appendChild(b);
+  }
+  refreshKeys();
+}
+function setKeyboardMode(mode){
+  keyboardMode=mode;
+  document.getElementById("modeDefault").classList.toggle("mode-active",mode==="default");
+  document.getElementById("modeFull").classList.toggle("mode-active",mode==="full");
+  document.getElementById("modeDefault").setAttribute("aria-pressed",String(mode==="default"));
+  document.getElementById("modeFull").setAttribute("aria-pressed",String(mode==="full"));
+  makeKeys();
+  document.getElementById("keyboardScroll").scrollLeft=0;
+  if(mode==="default" && [...sel].some(m=>m<48||m>83)){
+    midiStatus.textContent="DEFAULT shows C3–B5. Switch to FULL 88 KEYS to see selected notes outside that range.";
+  }
+}
+document.getElementById("modeDefault").addEventListener("click",()=>setKeyboardMode("default"));
+document.getElementById("modeFull").addEventListener("click",()=>setKeyboardMode("full"));
+makeKeys();
+
+function refreshKeys(){
+  document.querySelectorAll(".key").forEach(k=>k.classList.toggle("selected",sel.has(Number(k.dataset.midi))));
+}
+
+function setControls(hasNotes,hasMatch){
+  const enoughNotes=sel.size>=2;
+  document.getElementById("playChord").disabled=!enoughNotes;
+  document.getElementById("playArp").disabled=!enoughNotes;
+  document.getElementById("why").disabled=!hasMatch;
+  transposeRoot.disabled=!hasMatch;
+  document.getElementById("transposeBtn").disabled=!hasMatch;
+}
+
+function analyse(){
+  let a=[...sel].sort((x,y)=>x-y),
+      ne=document.getElementById("notes"),ce=document.getElementById("chord"),
+      de=document.getElementById("detail"),cn=document.getElementById("chordnotes"),
+      wb=document.getElementById("whybox");
+  ne.textContent=a.length?a.map(noteLabel).join(" – "):"None";
+  wb.classList.remove("show"); wb.innerHTML="";
+  currentMatch=null;
+  if(a.length<2){
+    ce.textContent="Select at least 2 notes";de.textContent="";cn.textContent="";
+    setControls(a.length>0,false);return
+  }
+  if(shownChordOverride){
+    const {root,p,inversion}=shownChordOverride;
+    const bass=a[0]%12;
+    const invNames=["root position","1st inversion","2nd inversion","3rd inversion","4th inversion","5th inversion"];
+    const inv=invNames[inversion]||((inversion+1)+"th inversion");
+    currentMatch={root,p,bass,inv,selected:a};
+    ce.textContent=names[root]+p.symbol+" — "+inv;
+    de.textContent=p.name+" · Root: "+names[root]+" · Bass: "+names[bass]+" · Pattern: "+p.ints.join("–");
+    cn.textContent="Chord notes: "+p.ints.map(i=>names[(root+i)%12]).join(" – ");
+    transposeRoot.value=root;
+    setControls(true,true);
+    return
+  }
+  let pcs=[...new Set(a.map(m=>m%12))],matches=[];
+  for(let root of pcs){
+    let rel=pcs.map(p=>(p-root+12)%12).sort((x,y)=>x-y);
+    for(let p of P)if(rel.length===p.ints.length&&rel.every((v,i)=>v===p.ints[i]))matches.push({root,p})
+  }
+  if(!matches.length){
+    ce.textContent="No exact match";de.textContent="This may be an incomplete, altered or uncommon voicing.";cn.textContent="";
+    setControls(true,false);return
+  }
+
+  // Prefer a complete chord spelling over an otherwise identical interpretation
+  // that explicitly depends on an omitted chord tone (for example "no5").
+  // Keep the omitted-note reading in Also possible.
+  const isOmitted=m=>/\bno\s*\d|omit/i.test((m.p.name||"")+" "+(m.p.symbol||""));
+  matches.sort((a,b)=>{
+    const ao=isOmitted(a),bo=isOmitted(b);
+    if(ao!==bo)return ao?1:-1;
+    return 0; // preserve the chord-library order within the same class
+  });
+
+  let bass=a[0]%12,
+      fmt=m=>{let d=m.p.ints.indexOf((bass-m.root+12)%12),inv=["root position","1st inversion","2nd inversion","3rd inversion","4th inversion","5th inversion"][d]||"slash / extended voicing";return {main:names[m.root]+m.p.symbol+" — "+inv,desc:m.p.name+" · Root: "+names[m.root]+" · Bass: "+names[bass]+" · Pattern: "+m.p.ints.join("–"),inv}},
+      f=fmt(matches[0]),alts=matches.slice(1,4).map(m=>names[m.root]+m.p.symbol);
+  currentMatch={...matches[0],bass,inv:f.inv,selected:a};
+  ce.textContent=f.main;
+  de.textContent=f.desc+(alts.length?" · Also possible: "+alts.join(", "):"");
+  cn.textContent="Chord notes: "+matches[0].p.ints.map(i=>names[(matches[0].root+i)%12]).join(" – ");
+  transposeRoot.value=matches[0].root;
+  setControls(true,true);
+}
+
+function ensureAudio(){
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return null;
+  if(!ensureAudio.ctx)ensureAudio.ctx=new AC();
+  if(ensureAudio.ctx.state==="suspended")ensureAudio.ctx.resume();
+  return ensureAudio.ctx;
+}
+function playMidi(m,when,duration=.7,fromMidi=false){
+  const ctx=ensureAudio(); if(!ctx)return;
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type="triangle";osc.frequency.value=440*Math.pow(2,(m-69)/12);
+  gain.gain.setValueAtTime(0.0001,when);
+  gain.gain.exponentialRampToValueAtTime(0.16,when+.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001,when+duration);
+  if(fromMidi){midiAudioGains.add(gain);osc.onended=()=>midiAudioGains.delete(gain);}
+  osc.connect(gain);gain.connect(ctx.destination);osc.start(when);osc.stop(when+duration+.03);
+}
+document.getElementById("playChord").onclick=()=>{
+  let ctx=ensureAudio();if(!ctx)return;
+  let t=ctx.currentTime+.03;[...sel].sort((a,b)=>a-b).forEach(m=>playMidi(m,t,.85));
+};
+document.getElementById("playArp").onclick=()=>{
+  let ctx=ensureAudio();if(!ctx)return;
+  let t=ctx.currentTime+.03;[...sel].sort((a,b)=>a-b).forEach((m,i)=>playMidi(m,t+i*.28,.55));
+};
+document.getElementById("why").onclick=()=>{
+  if(!currentMatch)return;
+  let wb=document.getElementById("whybox");
+  if(wb.classList.contains("show")){wb.classList.remove("show");return}
+  let bits=currentMatch.p.ints.map(i=>"<strong>"+names[(currentMatch.root+i)%12]+"</strong> = "+intervalNames[i]);
+  wb.innerHTML="<strong>Why this chord?</strong><br>"+names[currentMatch.root]+currentMatch.p.symbol+" is built from: "+bits.join(" · ")+".<br><br>The lowest selected note is <strong>"+names[currentMatch.bass]+"</strong>, so this voicing is <strong>"+currentMatch.inv+"</strong>.";
+  wb.classList.add("show");
+};
+document.getElementById("transposeBtn").onclick=()=>{
+  if(!currentMatch)return;
+  let target=Number(transposeRoot.value);
+  let up=(target-currentMatch.root+12)%12;
+  let down=up-12;
+  let candidates=[up,down].sort((a,b)=>Math.abs(a)-Math.abs(b));
+  let original=[...sel].sort((a,b)=>a-b);
+  let chosen=null,moved=null;
+
+  for(let shift of candidates){
+    let test=original.map(m=>m+shift);
+    if(Math.min(...test)>=keyboardBounds()[0] && Math.max(...test)<=keyboardBounds()[1]){
+      chosen=shift;moved=test;break;
+    }
+  }
+
+  if(!moved){
+    // If the nearest literal move falls outside the displayed keyboard,
+    // try octave-equivalent placements and choose the smallest movement.
+    let options=[];
+    for(let shift of [up,down,up+12,down-12]){
+      let test=original.map(m=>m+shift);
+      if(Math.min(...test)>=keyboardBounds()[0] && Math.max(...test)<=keyboardBounds()[1])options.push({shift,test});
+    }
+    options.sort((a,b)=>Math.abs(a.shift)-Math.abs(b.shift));
+    if(options.length){chosen=options[0].shift;moved=options[0].test}
+  }
+
+  if(!moved){alert("That transposition falls outside the selected keyboard range.");return}
+  mouseSelected.clear();midiLatched.clear();midiHeld.clear();
+  moved.forEach(m=>mouseSelected.add(m));shownChordOverride=null;updateSelectionFromSources();
+};
+document.getElementById("clear").onclick=()=>{
+  midiHeld.clear();midiClearArmed=true;
+  clearChordSelection();updateMidiHeldStatus();
+};
+analyse();
+</script></body></html>
